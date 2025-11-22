@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chinwi Gaboni Store</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #f3f3f3;
+        direction: rtl;
+    }
+
+    /* Header */
+    .header {
+        background: #ff6a00;
+        padding: 15px;
+        color: white;
+        text-align: center;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    /* Search Bar */
+    .search-box {
+        padding: 15px;
+        text-align: center;
+        background: #fff;
+    }
+    input {
+        padding: 10px;
+        width: 80%;
+        font-size: 16px;
+        border-radius: 10px;
+        border: 1px solid #aaa;
+    }
+
+    /* Category Bar */
+    .categories {
+        display: flex;
+        gap: 15px;
+        padding: 15px;
+        background: #fff;
+        overflow-x: auto;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .category {
+        padding: 10px 20px;
+        background: #ddd;
+        border-radius: 20px;
+        cursor: pointer;
+        white-space: nowrap;
+        font-size: 18px;
+    }
+
+    .category.active {
+        background: #ff6a00;
+        color: white;
+    }
+
+    /* Products */
+    .products {
+        padding: 20px;
+        margin-right: 350px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .card img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    button {
+        padding: 10px 15px;
+        border: none;
+        background: #ff6a00;
+        color: white;
+        font-size: 16px;
+        border-radius: 6px;
+        margin-top: 10px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #ff4500;
+    }
+
+    /* Cart */
+    .cart {
+        position: fixed;
+        right: 0;
+        top: 0;
+        width: 330px;
+        height: 100vh;
+        background: white;
+        padding: 20px;
+        box-shadow: -3px 0 10px rgba(0,0,0,0.2);
+        overflow-y: auto;
+    }
+
+    .cart-item {
+        background: #eee;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+    }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">🛒 Chinwi Gaboni Store</div>
+
+<!-- Search -->
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="ابحث عن منتج..." onkeyup="searchProducts()">
+</div>
+
+<!-- Category Bar -->
+<div class="categories" id="categoryBar"></div>
+
+<!-- Product List -->
+<div class="products" id="productList"></div>
+
+<!-- Cart -->
+<div class="cart">
+    <h2>سلة المشتريات</h2>
+    <div id="cartItems"></div>
+    <hr>
+    <h3>المجموع: <span id="total">0</span> DA</h3>
+</div>
+
+<script>
+    // -------------------------------
+    // DATABASE (MERGED VERSION)
+    // -------------------------------
+    let categories = [
+        { name: "هواتف", products: [
+            { name: "هاتف Samsung", price: 35000, img: "https://i.imgur.com/Z7eYt7h.jpeg" },
+            { name: "هاتف iPhone", price: 120000, img: "https://i.imgur.com/dwZ0UOJ.jpeg" },
+            { name: "هاتف شاومي", price: 25000, img: "https://i.imgur.com/Z7eYt7h.jpeg" }
+        ]},
+        
+        { name: "إلكترونيات", products: [
+            { name: "سماعات بلوتوث", price: 4000, img: "https://i.imgur.com/bIR3xGq.jpeg" },
+            { name: "ميكروفون احترافي", price: 7000, img: "https://i.imgur.com/Uf5UXkU.jpeg" },
+            { name: "حاسوب محمول", price: 120000, img: "https://i.imgur.com/dwZ0UOJ.jpeg" }
+        ]},
+
+        { name: "ملابس", products: [
+            { name: "قميص رجالي", price: 2500, img: "https://i.imgur.com/2pO7I13.jpeg" },
+            { name: "حذاء رياضي", price: 6000, img: "https://i.imgur.com/Y7qmcEg.jpeg" }
+        ]},
+
+        { name: "ساعات", products: [
+            { name: "ساعة ذكية", price: 9000, img: "https://i.imgur.com/Q9qFtqN.jpeg" }
+        ]},
+
+        { name: "مكتبية", products: [
+            { name: "لوحة مفاتيح", price: 3000, img: "https://i.imgur.com/O9pQZ6G.jpeg" }
+        ]}
+    ];
+
+    let currentCategory = 0;
+    let cart = [];
+
+    // Load categories
+    function loadCategories() {
+        let bar = document.getElementById("categoryBar");
+        bar.innerHTML = "";
+
+        categories.forEach((c, i) => {
+            bar.innerHTML += `
+                <div class="category ${i === 0 ? 'active' : ''}" onclick="switchCategory(${i})">
+                    ${c.name}
+                </div>
+            `;
+        });
+    }
+
+    // Switch category
+    function switchCategory(i) {
+        currentCategory = i;
+        document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.category')[i].classList.add('active');
+        loadProducts();
+    }
+
+    // Load products
+    function loadProducts() {
+        let container = document.getElementById("productList");
+        container.innerHTML = "";
+
+        categories[currentCategory].products.forEach((p, index) => {
+            container.innerHTML += `
+                <div class="card">
+                    <img src="${p.img}">
+                    <h3>${p.name}</h3>
+                    <p>${p.price} DA</p>
+                    <button onclick="addToCart(${currentCategory}, ${index})">أضف إلى السلة</button>
+                </div>
+            `;
+        });
+    }
+
+    // Add to cart
+    function addToCart(cat, prod) {
+        cart.push(categories[cat].products[prod]);
+        updateCart();
+    }
+
+    // Update cart UI
+    function updateCart() {
+        let box = document.getElementById("cartItems");
+        box.innerHTML = "";
+        let total = 0;
+
+        cart.forEach(item => {
+            box.innerHTML += `
+                <div class="cart-item">
+                    <span>${item.name}</span>
+                    <span>${item.price} DA</span>
+                </div>
+            `;
+            total += item.price;
+        });
+
+        document.getElementById("total").innerText = total;
+    }
+
+    // Search
+    function searchProducts() {
+        let value = document.getElementById("searchInput").value.toLowerCase();
+        let container = document.getElementById("productList");
+        container.innerHTML = "";
+
+        categories[currentCategory].products
+        .filter(p => p.name.toLowerCase().includes(value))
+        .forEach((p, index) => {
+            container.innerHTML += `
+                <div class="card">
+                    <img src="${p.img}">
+                    <h3>${p.name}</h3>
+                    <p>${p.price} DA</p>
+                    <button onclick="addToCart(${currentCategory}, ${index})">أضف إلى السلة</button>
+                </div>
+            `;
+        });
+    }
+
+    // Init
+    loadCategories();
+    loadProducts();
+</script>
+
+</body>
+</html>
